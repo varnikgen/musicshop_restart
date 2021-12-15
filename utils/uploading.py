@@ -43,4 +43,8 @@ class ImageUploadHelper:
 
 
 def upload_function(instance, filename):
-    pass
+    if hasattr(instance, "content_object"):
+        instance = instance.content_object
+    field_to_combine, upload_postfix = ImageUploadHelper.get_field_to_combine_and_upload_postfix(instance.__class__.__name__)
+    image = ImageUploadHelper(field_to_combine, instance, filename, upload_postfix)
+    return image.path
