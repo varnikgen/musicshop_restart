@@ -1,22 +1,19 @@
-
-
-
 class ImageUploadHelper:
 
     FIELD_TO_COMBINE_MAP = {
-        'defaults': {
+        'default': {
             'upload_postfix': 'uploads'
         },
         'Member': {
-            'fields': 'slug',
+            'field': 'slug',
             'upload_postfix': 'members_images'
         },
         'Artist': {
-            'fields': 'slug',
+            'field': 'slug',
             'upload_postfix': 'artist_images'
         },
         'Album': {
-            'fields': 'slug',
+            'field': 'slug',
             'upload_postfix': 'album_images'
         },
     }
