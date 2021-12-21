@@ -45,8 +45,8 @@ class LoginView(views.View):
     def post(self, request, *args, **kwargs):
         form = LoginForm(request.POST or None)
         if form.is_valid():
-            username = form.changed_data['username']
-            password = form.changed_data['password']
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
             user = authenticate(username=username, password=password)
             if user:
                 login(request, user)
@@ -54,14 +54,14 @@ class LoginView(views.View):
         context = {
             'form': form
         }
-        return render(request, 'registration.html', context)
+        return render(request, 'login.html', context)
 
 
 class RegistrationView(views.View):
     """Представление формы для регистрации"""
 
     def get(self, request, *args, **kwargs):
-        form = RegistrationView(request.POST or None)
+        form = RegistrationForm(request.POST or None)
         context = {
             'form': form
         }
