@@ -3,8 +3,9 @@ from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 
-from .models import Artist, Album, Customer
 from .forms import LoginForm, RegistrationForm
+from .mixins import CartMixin
+from .models import Artist, Album, Customer
 
 
 class BaseView(views.View):
@@ -90,3 +91,14 @@ class RegistrationView(views.View):
             'form': form
         }
         return render(request, 'registration.html', context)
+
+
+class AccountView(CartMixin, views.View):
+    """Представление аккаунта покупателя"""
+    def get(self, request, *args, **kwargs):
+        customer = Customer.objects.get(user = request.user)
+        context = {
+            'customer': customer,
+            'cart': self.cart
+        }
+        return render(request, 'account.html', context)
