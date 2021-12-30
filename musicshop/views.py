@@ -1,11 +1,14 @@
 from django import views
+from django.contrib import messages
 from django.contrib.auth import authenticate, login
+from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 
 from .forms import LoginForm, RegistrationForm
 from .mixins import CartMixin
-from .models import Artist, Album, Customer
+from .models import Artist, Album, Customer, CartProduct
+from utils import recalc_cart
 
 
 class BaseView(views.View):
@@ -95,10 +98,61 @@ class RegistrationView(views.View):
 
 class AccountView(CartMixin, views.View):
     """Представление аккаунта покупателя"""
+
     def get(self, request, *args, **kwargs):
-        customer = Customer.objects.get(user = request.user)
+        customer = Customer.objects.get(user=request.user)
         context = {
             'customer': customer,
             'cart': self.cart
         }
         return render(request, 'account.html', context)
+
+
+class AddToCartView(CartMixin, views.View):
+    """Представление добавления в карзину"""
+
+    def get(self, request, *args, **kwargs):
+        ct_model, product_slug = kwargs.get('ct_model'), kwargs.get('slug')
+        content_type = ContentType.objects.get(model=ct_model)
+        product = content_type.model_class().objects.get(slug=product_slug)
+        cart_product, created = CartProduct.objects.get_or_create(
+            user=self.cart.owner, cart=self.cart, content_type=content_type, object_id=product.id
+        )
+        if created:
+            self.cart.products.add(cart_product)
+        recalc_cart(self.cart)
+        messages.add_message(request, messages.INFO, "Товар успешно добавлен")
+        return HttpResponseRedirect(request.META['HTTP_REFERER'])
+
+
+class DeleteFromCartView(CartMixin, views.View):
+    """Представление удаления продукта из корзины"""
+    def get(self, request, *args, **kwargs):
+        ct_model, product_slug = kwargs.get('ct_model'), kwargs.get('slug')
+        content_type = ContentType.objects.get(model=ct_model)
+        product = content_type.model_class().objects.get(slug=product_slug)
+        cart_product, created = CartProduct.objects.get(
+            user=self.cart.owner, cart=self.cart, content_type=content_type, object_id=product.id
+        )
+        self.cart.products.remove(cart_product)
+        cart_product.delete()
+        recalc_cart(self.cart)
+        messages.add_message(request, messages.INFO, "Товар удалён из корзины")
+        return HttpResponseRedirect(request.META['HTTP_REFERER'])
+
+
+class ChangeQTYView(CartMixin, views.View):
+    """Изменение колличества продукта в корзине"""
+    def post(self, request, *args, **kwargs):
+        ct_model, product_slug = kwargs.get('ct_model'), kwargs.get('slug')
+        content_type = ContentType.objects.get(model=ct_model)
+        product = content_type.model_class().objects.get(slug=product_slug)
+        cart_product, created = CartProduct.objects.get(
+            user=self.cart.owner, cart=self.cart, content_type=content_type, object_id=product.id
+        )
+        qty = int(request.POST.get('qty'))
+        cart_product.qty = qty
+        cart_product.save()
+        recalc_cart(self.cart)
+        messages.add_message(request, messages.INFO, 'Колличество товара обновлено')
+        return HttpResponseRedirect(request.META['HTTP_REFERER'])
