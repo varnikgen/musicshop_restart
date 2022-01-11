@@ -11,11 +11,16 @@ from .models import Artist, Album, Customer, CartProduct
 from utils import recalc_cart
 
 
-class BaseView(views.View):
+class BaseView(CartMixin, views.View):
     """Базовое представление"""
 
     def get(self, request, *args, **kwargs):
-        return render(request, "base.html", {})
+        albums = Album.objects.all().order_by('-id')[:5]
+        context = {
+            'albums': albums,
+            'cart': self.cart,
+        }
+        return render(request, "base.html", context)
 
 
 class ArtistDetailView(views.generic.DetailView):
@@ -106,6 +111,12 @@ class AccountView(CartMixin, views.View):
             'cart': self.cart
         }
         return render(request, 'account.html', context)
+
+
+class CartView(CartMixin, views.View):
+    """Представление корзины"""
+    def get(self, request, *args, **kwargs):
+        return render(request, 'cart.html', {"cart": self.cart})
 
 
 class AddToCartView(CartMixin, views.View):
