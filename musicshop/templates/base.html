@@ -51,7 +51,61 @@
 </nav>
 <div class="container">
     {% block content %}
-        {{ request.user }}
+        <div class="col-md-12">
+            <div class="row">
+                {% for album in albums %}
+                    <div class="card col-md-3 p-0 mt-3">
+                        <img src="{{ album.image.url }}" class="card-image-top">
+                        <div class="card-body text-center">
+                            <h5 class="card-title"><a href="{{ album.artist.get_absolute_url }}" class="text-decoration-none">
+                                {{ album.artist.name }}
+                            </a></h5>
+                            <h5 class="card-title"><a href="{{ album.get_absolute_url }}" class="text-decoration-none">
+                                {{ album.name }}
+                            </a></h5>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">Носитель: <strong>{{ album.media_type.name }}</strong></li>
+                            <li class="list-group-item">Дата релиза: <strong>{{ album.release_date|date:"d.m.Y" }}</strong></li>
+                            <li class="list-group-item">Жанр: <strong>{{ album.artist.genre.name }}</strong></li>
+                            <li class="list-group-item">
+                                Наличие: {% if album.stock %} <strong class="badge bg-success">
+                                    Есть в наличии - {{ album.stock }} шт.
+                                </strong>{% else %}
+                                    <strong class="badge bg-danger">Нет в наличии</strong>
+                                {% endif %}
+                            </li>
+                        </ul>
+                        <div class="card-body text-center">
+                            {% if request.user.is_authenticated %}
+
+                                {% if album.stock %}
+                                    {% if album not in cart.products_in_cart %}
+                                        <a href="{% url 'add_to_cart' ct_model=album.ct_model slug=album.slug %}"><button class="btn btn-primary">
+                                            Добавить в корзину
+                                        </button></a>
+                                    {% else %}
+                                        <a href="#" class="btn btn-default" disabled="">Добавлен в корзину</a>
+                                    {% endif %}
+
+                                {% else %}
+                                    {% if album not in request.user.customer.wishlist.all %}
+                                        <a href="{% url 'add_to_wishlist' album_id=album.id %}" class="btn btn-warning">
+                                            Добавить в ожидаемое
+                                        </a>
+                                    {% else %}
+                                        <a href="#" class="btn btn-default" disabled="">Добавлен в ожидаемое</a>
+                                    {% endif %} 
+                                {% endif %}
+                            {% else %}
+                                <a href="{% url 'registration' %}" class="btn btn-default">Зарегистрируйтесь/Авотризуйтесь</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+
+            </div>
+        </div>
     {% endblock content %}
 </div>
 </body>

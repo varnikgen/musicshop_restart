@@ -3,6 +3,7 @@ from django.urls import path
 
 from .views import (
     BaseView,
+    AddToWishList,
     ArtistDetailView,
     AlbumDetailView,
     RegistrationView,
@@ -26,6 +27,7 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(next_page='/'), name='logout'),
     path('registration/', RegistrationView.as_view(), name='registration'),
     path('account/', AccountView.as_view(), name='account'),
+    path('add-to-wishlist/<int:album_id>/', AddToWishList.as_view(), name='add_to_wishlist'),
     path('<str:artist_slug>/', ArtistDetailView.as_view(), name='artist_detail'),
     path('<str:artist_slug>/<str:album_slug>/', AlbumDetailView.as_view(), name='album_detail'),
 ]
