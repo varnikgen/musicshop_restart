@@ -33,7 +33,8 @@
                     <td>
                         <form action="{% url 'change_qty' ct_model=item.content_object.ct_model slug=item.content_object.slug %}"
                             method="POST">
-                            <input type="number" class="from-control" name="qty" min="1" value="{{ item.qty }}">
+                            {% csrf_token %}
+                            <input type="number" class="from-control" style="width: 70px;" name="qty" min="1" value="{{ item.qty }}">
                             <br>
                             <input type="submit" class="btn btn-primary" value="Изменить кол-во">
                         </form>
@@ -46,6 +47,13 @@
                     </td>
                 </tr>
                 {% endfor %}
+                <tr>
+                    <td colspan="2"></td>
+                    <td>Итого:</td>
+                    <td>{{ cart.total_products }}</td>
+                    <td><strong>{{ cart.final_price }} руб.</strong></td>
+                    <td><a href="#"><button class="btn btn-primary">Оформить заказ</button></a></td>
+                </tr>
             </thbody>
         </table>
     {% endif %}
