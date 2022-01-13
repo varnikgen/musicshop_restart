@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
+from django.db.models.signals import post_save
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -67,7 +68,7 @@ class Artist(models.Model):
 
     def get_absolute_url(self):
         return reverse('artist_detail', kwargs={'artist_slug': self.slug})
-    
+
     class Meta:
         verbose_name = 'Исполнитель'
         verbose_name_plural = 'Исполнители'
@@ -222,11 +223,23 @@ class Customer(models.Model):
 
     def __str__(self):
         return f"{self.user.username}"
-    
+
     class Meta:
         verbose_name = 'Покупатель'
         verbose_name_plural = 'Покупатели'
-    
+
+
+class NotificationManager(models.Manager):
+    """Менеджер уведомлений"""
+    def get_queryset(self):
+        return super().get_queryset()
+
+    def all(self, recipient):
+        return self.get_queryset().filter(
+            recipient=recipient,
+            read=False,
+        )
+
 
 class Notification(models.Model):
     """Уведомление"""
@@ -234,6 +247,7 @@ class Notification(models.Model):
     recipient = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name="Получатель")
     text = models.TextField()
     read = models.BooleanField(default=False)
+    objects = NotificationManager()
 
     def __str__(self):
         return f"Уведомление для {self.recipient.user.username} | id={self.id}"
@@ -261,4 +275,21 @@ class ImageGallery(models.Model):
     class Meta:
         verbose_name = 'Галерея изображений'
         verbose_name_plural = verbose_name
-    
+
+
+def send_notification(instance, **kwargs):
+    if instance.stock:
+        customers = Customer.objects.filter(
+            wishlist__in=[instance]
+        )
+        if customers.count():
+            for customer in customers:
+                Notification.objects.create(
+                    recipient=customer,
+                    text=mark_safe(f'Позиция <a href="{instance.get_absolute_url()}">{instance.display_name}</a>, '
+                                   f'которую Вы ожидаете, есть в наличии.')
+                )
+                customer.wishlist.remove(instance)
+
+
+post_save.connect(send_notification, sender=Album)

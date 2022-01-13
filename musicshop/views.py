@@ -6,12 +6,12 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 
 from .forms import LoginForm, RegistrationForm
-from .mixins import CartMixin
+from .mixins import CartMixin, NotificationMixin
 from .models import Artist, Album, Customer, CartProduct
 from utils import recalc_cart
 
 
-class BaseView(CartMixin, views.View):
+class BaseView(CartMixin, NotificationMixin, views.View):
     """Базовое представление"""
 
     def get(self, request, *args, **kwargs):
