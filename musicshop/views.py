@@ -7,7 +7,7 @@ from django.shortcuts import render
 
 from .forms import LoginForm, RegistrationForm
 from .mixins import CartMixin, NotificationMixin
-from .models import Artist, Album, Customer, CartProduct
+from .models import Artist, Album, Customer, CartProduct, Notification
 from utils import recalc_cart
 
 
@@ -19,6 +19,7 @@ class BaseView(CartMixin, NotificationMixin, views.View):
         context = {
             'albums': albums,
             'cart': self.cart,
+            'notifications': self.notifications(request.user)
         }
         return render(request, "base.html", context)
 
@@ -176,4 +177,12 @@ class AddToWishList(views.View):
         album = Album.objects.get(id=kwargs['album_id'])
         customer = Customer.objects.get(user=request.user)
         customer.wishlist.add(album)
+        return HttpResponseRedirect(request.META['HTTP_REFERER'])
+
+
+class ClearNotificationsView(views.View):
+    """Представление очистки уведомлений"""
+    @staticmethod
+    def get(request, *args, **kwargs):
+        Notification.objects.make_all_read(request.user.customer)
         return HttpResponseRedirect(request.META['HTTP_REFERER'])

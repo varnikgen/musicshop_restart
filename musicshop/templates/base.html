@@ -35,6 +35,26 @@
                     <li class="nav-item">
                         <a href="{% url 'logout' %}" class="nav-link">Выйти</a>
                     </li>
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" id="navbarDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            Уведомления <i class="fas fa-bell"></i>
+                            <span class="badge bg-{% if notifications.count %}danger{% else %}secondary{% endif %}">
+                                {{ notifications.count }}
+                            </span>
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            {% if notifications %}
+                                {% for notification in notifications %}
+                                    <li><span class="dropdown-item">{{ notification.text|safe }}</span></li>
+                                {% endfor %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a href="{% url 'clear_notifications' %}" class="dropdown-item">Пометить всё, как прочитанное</a></li>
+                            {% else %}
+                                <li><a href="#" class="dropdown-item">Нет новых уведомлений</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
                 {% endif %}
             </ul>
             {% if request.user.is_authenticated %}

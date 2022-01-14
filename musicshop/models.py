@@ -240,6 +240,10 @@ class NotificationManager(models.Manager):
             read=False,
         )
 
+    def make_all_read(self, recipient):
+        qs = self.get_queryset().filter(recipient=recipient, read=False)
+        qs.update(read=True)
+
 
 class Notification(models.Model):
     """Уведомление"""
@@ -286,7 +290,7 @@ def send_notification(instance, **kwargs):
             for customer in customers:
                 Notification.objects.create(
                     recipient=customer,
-                    text=mark_safe(f'Позиция <a href="{instance.get_absolute_url()}">{instance.display_name}</a>, '
+                    text=mark_safe(f'Позиция <a href="{instance.get_absolute_url()}">{instance.name}</a>, '
                                    f'которую Вы ожидаете, есть в наличии.')
                 )
                 customer.wishlist.remove(instance)
