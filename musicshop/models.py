@@ -292,7 +292,6 @@ def check_previous_qty(instance, **kwargs):
 
 def send_notification(instance, **kwargs):
     if instance.stock and instance.out_of_stock:
-        print('fire notifications')
         customers = Customer.objects.filter(
             wishlist__in=[instance]
         )
