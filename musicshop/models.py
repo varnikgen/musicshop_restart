@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -85,6 +85,7 @@ class Album(models.Model):
     slug = models.SlugField()
     description = models.TextField(verbose_name="Описание", default="Описание появится позже")
     stock = models.IntegerField(default=1, verbose_name="Наличие на складе")
+    out_of_stock = models.BooleanField(default=False, verbose_name='Нет в наличии')
     price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name="Цена")
     offer_of_the_week = models.BooleanField(default=False, verbose_name="Предложение недели?")
     image = models.ImageField(upload_to=upload_function)
@@ -281,8 +282,17 @@ class ImageGallery(models.Model):
         verbose_name_plural = verbose_name
 
 
+def check_previous_qty(instance, **kwargs):
+    try:
+        album = Album.objects.get(id=instance.id)
+    except Album.DoesNotExist:
+        return None
+    instance.out_of_stock = True if not album.stock else False
+
+
 def send_notification(instance, **kwargs):
-    if instance.stock:
+    if instance.stock and instance.out_of_stock:
+        print('fire notifications')
         customers = Customer.objects.filter(
             wishlist__in=[instance]
         )
@@ -297,3 +307,4 @@ def send_notification(instance, **kwargs):
 
 
 post_save.connect(send_notification, sender=Album)
+pre_save.connect(check_previous_qty, sender=Album)
