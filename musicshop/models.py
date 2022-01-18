@@ -2,7 +2,7 @@ import operator
 from django.conf import settings
 
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.urls import reverse
@@ -62,6 +62,7 @@ class Artist(models.Model):
     members = models.ManyToManyField(Member, verbose_name="Участник", related_name="artist")
     slug = models.SlugField()
     image = models.ImageField(upload_to=upload_function, null=True, blank=True)
+    image_gallery = GenericRelation('imagegallery')
 
     def __str__(self):
         return f'{self.name} | {self.genre.name}'
@@ -89,6 +90,7 @@ class Album(models.Model):
     price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name="Цена")
     offer_of_the_week = models.BooleanField(default=False, verbose_name="Предложение недели?")
     image = models.ImageField(upload_to=upload_function)
+    image_gallery = GenericRelation('imagegallery')
 
     def __str__(self):
         return f"{self.id} | {self.artist.name} | {self.name}"

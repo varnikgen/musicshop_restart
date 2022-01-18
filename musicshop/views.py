@@ -24,7 +24,7 @@ class BaseView(CartMixin, NotificationMixin, views.View):
         return render(request, "base.html", context)
 
 
-class ArtistDetailView(views.generic.DetailView):
+class ArtistDetailView(CartMixin, NotificationMixin, views.generic.DetailView):
     """Детализированное представление исполнителя"""
 
     model = Artist
@@ -33,7 +33,7 @@ class ArtistDetailView(views.generic.DetailView):
     context_object_name = 'artist'
 
 
-class AlbumDetailView(views.generic.DetailView):
+class AlbumDetailView(CartMixin, NotificationMixin, views.generic.DetailView):
     """Детализированное представление исполнителя"""
 
     model = Album
