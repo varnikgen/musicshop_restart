@@ -15,6 +15,7 @@ from .views import (
     ChangeQTYView,
     ClearNotificationsView,
     RemoveFromWishListView,
+    CheckoutView,
 )
 
 urlpatterns = [
@@ -29,6 +30,7 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(next_page='/'), name='logout'),
     path('registration/', RegistrationView.as_view(), name='registration'),
     path('account/', AccountView.as_view(), name='account'),
+    path('checkout/', CheckoutView.as_view(), name='checkout'),
     path('clear-notifications/', ClearNotificationsView.as_view(), name='clear_notifications'),
     path('add-to-wishlist/<int:album_id>/', AddToWishList.as_view(), name='add_to_wishlist'),
     path('remove-from-wishlist/<int:album_id>/', RemoveFromWishListView.as_view(), name='remove_from_wishlist'),

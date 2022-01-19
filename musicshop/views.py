@@ -5,7 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 
-from .forms import LoginForm, RegistrationForm
+from .forms import LoginForm, RegistrationForm, OrderForm
 from .mixins import CartMixin, NotificationMixin
 from .models import Artist, Album, Customer, CartProduct, Notification
 from utils import recalc_cart
@@ -102,22 +102,23 @@ class RegistrationView(views.View):
         return render(request, 'registration.html', context)
 
 
-class AccountView(CartMixin, views.View):
+class AccountView(CartMixin, NotificationMixin, views.View):
     """Представление аккаунта покупателя"""
 
     def get(self, request, *args, **kwargs):
         customer = Customer.objects.get(user=request.user)
         context = {
             'customer': customer,
-            'cart': self.cart
+            'cart': self.cart,
+            'notifications': self.notifications(request.user)
         }
         return render(request, 'account.html', context)
 
 
-class CartView(CartMixin, views.View):
+class CartView(CartMixin, NotificationMixin, views.View):
     """Представление корзины"""
     def get(self, request, *args, **kwargs):
-        return render(request, 'cart.html', {"cart": self.cart})
+        return render(request, 'cart.html', {"cart": self.cart, 'notifications': self.notifications(request.user)})
 
 
 class AddToCartView(CartMixin, views.View):
@@ -196,3 +197,15 @@ class RemoveFromWishListView(views.View):
         customer = Customer.objects.get(user=request.user)
         customer.wishlist.remove(album)
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
+
+
+class CheckoutView(CartMixin, NotificationMixin, views.View):
+
+    def get(self, request, *args, **kwargs):
+        form = OrderForm(request.POST or None)
+        context = {
+            'cart': self.cart,
+            'form': form,
+            'notifications': self.notifications(request.user)
+        }
+        return render(request, 'checkout.html', context)
