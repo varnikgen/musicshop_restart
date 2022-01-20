@@ -1,4 +1,5 @@
 from django import views
+from django.db import transaction
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.contenttypes.models import ContentType
@@ -209,3 +210,67 @@ class CheckoutView(CartMixin, NotificationMixin, views.View):
             'notifications': self.notifications(request.user)
         }
         return render(request, 'checkout.html', context)
+
+
+class MakeOrderView(CartMixin, views.View):
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        form = OrderForm(request.POST or None)
+        customer = Customer.objects.get(user=request.user)
+        if form.is_valid():
+            out_of_stock = []
+            more_than_on_stock = []
+            out_of_stock_message = ""
+            more_than_on_stock_messages = ""
+            for item in self.cart.products.all():
+                if not item.content_object.stock:
+                    out_of_stock.append(' - '.join([
+                        item.content_object.artist.name, item.content_object.name
+                    ]))
+                if item.content_object.stock and item.content_object.stock < item.qty:
+                    more_than_on_stock.append(
+                        {'product': ' - '.join([item.content_object.artist.name, item.content_object.name]),
+                         'stock': item.content_object.stock, 'qty': item.qty}
+                    )
+            if out_of_stock:
+                out_of_stock_products = ', '.join(out_of_stock)
+                out_of_stock_message = f'Товара уже нет в наличии: {out_of_stock_products}. \n'
+            if more_than_on_stock:
+                for item in more_than_on_stock:
+                    more_than_on_stock_messages += f'Товар: {item["product"]}. ' \
+                                                   f'В наличии: {item["stock"]}.' \
+                                                   f'Заказано: {item["qty"]}.\n'
+            error_message_for_customer = ""
+            if out_of_stock:
+                error_message_for_customer = out_of_stock_message + '\n'
+            if more_than_on_stock:
+                error_message_for_customer += more_than_on_stock_messages + '\n'
+
+            if error_message_for_customer:
+                messages.add_message(request, messages.INFO, error_message_for_customer)
+                return HttpResponseRedirect('/checkout/')
+            new_order = form.save(commit=False)
+            new_order.customer = customer
+            new_order.first_name = form.cleaned_data['first_name']
+            new_order.last_name = form.cleaned_data['last_name']
+            new_order.phone = form.cleaned_data['phone']
+            new_order.address = form.cleaned_data['address']
+            new_order.buying_type = form.cleaned_data['buying_type']
+            new_order.order_date = form.cleaned_data['order_date']
+            new_order.comment = form.cleaned_data['comment']
+            new_order.save()
+
+            self.cart.in_order = True
+            self.cart.save()
+            new_order.cart = self.cart
+            new_order.save()
+            customer.orders.add(new_order)
+
+            for item in self.cart.products.all():
+                item.content_object.stock -= item.qty
+                item.content_object.save()
+
+            messages.add_message(request, messages.INFO, 'Спасибо за заказ! Менеджер с Вами свежется в ближайшее время!')
+            return HttpResponseRedirect('/')
+        return HttpResponseRedirect('/checkout/')
