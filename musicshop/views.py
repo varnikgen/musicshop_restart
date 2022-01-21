@@ -259,7 +259,7 @@ class MakeOrderView(CartMixin, views.View):
             new_order.buying_type = form.cleaned_data['buying_type']
             new_order.order_date = form.cleaned_data['order_date']
             new_order.comment = form.cleaned_data['comment']
-            new_order.save()
+            new_order.save() # I think this wrong
 
             self.cart.in_order = True
             self.cart.save()
