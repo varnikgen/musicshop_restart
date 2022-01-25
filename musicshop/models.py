@@ -1,9 +1,12 @@
 import operator
+from calendar import monthrange
+from datetime import datetime
+
 from django.conf import settings
 
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
-from django.db import models
+from django.db import connection, models
 from django.db.models.signals import post_save, pre_save
 from django.urls import reverse
 from django.utils import timezone
@@ -75,6 +78,39 @@ class Artist(models.Model):
         verbose_name_plural = 'Исполнители'
 
 
+class AlbumManager(models.Manager):
+    """Менеджер сырых запросов в базу данных"""
+
+    def get_queryset(self):
+        return super().get_queryset()
+
+    def get_month_bestseller(self):
+        today = datetime.today()
+        year, month = today.year, today.month
+        first_day = datetime(year, month, 1)
+        last_day = datetime(year, month, monthrange(year, month)[1])
+        query = f"""
+            SELECT shop_product.id as product_id, SUM(distinct shop_cart_product.qty) as total_qty
+            FROM musicshop_order as shop_order
+            JOIN musicshop_cart as shop_cart on shop_order.cart_id = shop_cart.id
+            JOIN musicshop_cartproduct as shop_cart_product on shop_cart.id = shop_cart_product.cart_id
+            JOIN musicshop_album as shop_product on shop_cart_product.object_id=shop_product.id
+            WHERE shop_order.order_date >= '{first_day}' and shop_order.order_date <= '{last_day}'
+            GROUP BY product_id
+            ORDER BY total_qty DESC
+            LIMIT 1
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            row = cursor.fetchone()
+        if row:
+            product_id, qty = row
+            album = Album.objects.get(pk=product_id)
+            return album, qty
+        return None, None
+
+
 class Album(models.Model):
     """Альбом исполнителя"""
 
@@ -91,6 +127,7 @@ class Album(models.Model):
     offer_of_the_week = models.BooleanField(default=False, verbose_name="Предложение недели?")
     image = models.ImageField(upload_to=upload_function)
     image_gallery = GenericRelation('imagegallery')
+    objects = AlbumManager()
 
     def __str__(self):
         return f"{self.id} | {self.artist.name} | {self.name}"
@@ -127,7 +164,8 @@ class CartProduct(models.Model):
 
     @property
     def display_name(self):
-        model_fields = self.MODEL_CARTPRODUCT_DISPLAY_NAME_MAP.get(self.content_object.__class__._meta.model_name.capitalize())
+        model_fields = self.MODEL_CARTPRODUCT_DISPLAY_NAME_MAP.get(
+            self.content_object.__class__._meta.model_name.capitalize())
         if model_fields and model_fields['is_constructable']:
             display_name = model_fields['separator'].join(
                 [operator.attrgetter(field)(self.content_object) for field in model_fields['fields']]
@@ -198,7 +236,8 @@ class Order(models.Model):
     first_name = models.CharField(max_length=255, verbose_name="Имя")
     last_name = models.CharField(max_length=255, verbose_name="Фамилия")
     phone = models.CharField(max_length=20, verbose_name="Телефон")
-    cart = models.ForeignKey(Cart, verbose_name="Корзина", null=True, blank=True, on_delete=models.CASCADE) # I think this wrong null=True, blanck=True
+    cart = models.ForeignKey(Cart, verbose_name="Корзина", null=True, blank=True,
+                             on_delete=models.CASCADE)  # I think this wrong null=True, blanck=True
     address = models.CharField(max_length=1024, verbose_name="Адрес", null=True, blank=True)
     status = models.CharField(max_length=100, verbose_name="Статус заказа", choices=STATUS_CHOICES, default=STATUS_NEW)
     buying_type = models.CharField(max_length=100, verbose_name="Тип заказа", choices=BUYING_TYPE_CHOICES)
@@ -219,7 +258,8 @@ class Customer(models.Model):
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     is_active = models.BooleanField(default=True, verbose_name="Активный")
-    customer_orders = models.ManyToManyField(Order, blank=True, related_name="related_customer", verbose_name="Заказы покупателя")
+    customer_orders = models.ManyToManyField(Order, blank=True, related_name="related_customer",
+                                             verbose_name="Заказы покупателя")
     wishlist = models.ManyToManyField(Album, blank=True, verbose_name="Список ожидания")
     phone = models.CharField(max_length=20, verbose_name="Номмер телефон")
     address = models.TextField(null=True, blank=True, verbose_name="Адрес")
@@ -234,6 +274,7 @@ class Customer(models.Model):
 
 class NotificationManager(models.Manager):
     """Менеджер уведомлений"""
+
     def get_queryset(self):
         return super().get_queryset()
 
