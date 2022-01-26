@@ -48,8 +48,11 @@
                                 {% for notification in notifications %}
                                     <li><span class="dropdown-item">{{ notification.text|safe }}</span></li>
                                 {% endfor %}
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a href="{% url 'clear_notifications' %}" class="dropdown-item">Пометить всё, как прочитанное</a></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li><a href="{% url 'clear_notifications' %}" class="dropdown-item">Пометить всё, как
+                                    прочитанное</a></li>
                             {% else %}
                                 <li><a href="#" class="dropdown-item">Нет новых уведомлений</a></li>
                             {% endif %}
@@ -57,15 +60,15 @@
                     </li>
                 {% endif %}
             </ul>
-            {% if request.user.is_authenticated %}
             <ul class="navbar-nav">
-                <li class="nav-item"><a href="{% url 'cart' %}" class="nav-link"><i class="fas fa-shopping-cart"></i><span class="badge bg-danger">{{ cart.products.count }}</span></a></li>
+                <li class="nav-item"><a href="{% url 'cart' %}" class="nav-link"><i
+                        class="fas fa-shopping-cart"></i><span class="badge bg-danger">{{ cart.products.count }}</span></a>
+                </li>
             </ul>
-            {% endif %}
-{#            <form class="d-flex">#}
-{#                <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">#}
-{#                <button class="btn btn-outline-success" type="submit">Search</button>#}
-{#            </form>#}
+            {#            <form class="d-flex">#}
+            {#                <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">#}
+            {#                <button class="btn btn-outline-success" type="submit">Search</button>#}
+            {#            </form>#}
         </div>
     </div>
 </nav>
@@ -87,7 +90,8 @@
                     <div class="card col-md-3 p-0 mt-3">
                         <img src="{{ album.image.url }}" class="card-image-top">
                         <div class="card-body text-center">
-                            <h5 class="card-title"><a href="{{ album.artist.get_absolute_url }}" class="text-decoration-none">
+                            <h5 class="card-title"><a href="{{ album.artist.get_absolute_url }}"
+                                                      class="text-decoration-none">
                                 {{ album.artist.name }}
                             </a></h5>
                             <h5 class="card-title"><a href="{{ album.get_absolute_url }}" class="text-decoration-none">
@@ -96,39 +100,40 @@
                         </div>
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item">Носитель: <strong>{{ album.media_type.name }}</strong></li>
-                            <li class="list-group-item">Дата релиза: <strong>{{ album.release_date|date:"d.m.Y" }}</strong></li>
+                            <li class="list-group-item">Дата релиза:
+                                <strong>{{ album.release_date|date:"d.m.Y" }}</strong></li>
                             <li class="list-group-item">Жанр: <strong>{{ album.artist.genre.name }}</strong></li>
                             <li class="list-group-item">
                                 Наличие: {% if album.stock %} <strong class="badge bg-success">
-                                    Есть в наличии - {{ album.stock }} шт.
-                                </strong>{% else %}
-                                    <strong class="badge bg-danger">Нет в наличии</strong>
-                                {% endif %}
+                                Есть в наличии - {{ album.stock }} шт.
+                            </strong>{% else %}
+                                <strong class="badge bg-danger">Нет в наличии</strong>
+                            {% endif %}
                             </li>
                         </ul>
                         <div class="card-body text-center">
-                            {% if request.user.is_authenticated %}
 
-                                {% if album.stock %}
-                                    {% if album not in cart.products_in_cart %}
-                                        <a href="{% url 'add_to_cart' ct_model=album.ct_model slug=album.slug %}"><button class="btn btn-primary">
+                            {% if album.stock %}
+                                {% if album not in cart.products_in_cart %}
+                                    <a href="{% url 'add_to_cart' ct_model=album.ct_model slug=album.slug %}">
+                                        <button class="btn btn-primary">
                                             Добавить в корзину
-                                        </button></a>
-                                    {% else %}
-                                        <a href="#" class="btn btn-default" disabled="">Добавлен в корзину</a>
-                                    {% endif %}
-
+                                        </button>
+                                    </a>
                                 {% else %}
+                                    <a href="#" class="btn btn-default" disabled="">Добавлен в корзину</a>
+                                {% endif %}
+
+                            {% else %}
+                                {% if request.user.is_authenticated %}
                                     {% if album not in request.user.customer.wishlist.all %}
                                         <a href="{% url 'add_to_wishlist' album_id=album.id %}" class="btn btn-warning">
                                             Добавить в ожидаемое
                                         </a>
                                     {% else %}
                                         <a href="#" class="btn btn-default" disabled="">Добавлен в ожидаемое</a>
-                                    {% endif %} 
+                                    {% endif %}
                                 {% endif %}
-                            {% else %}
-                                <a href="{% url 'registration' %}" class="btn btn-default">Зарегистрируйтесь/Авотризуйтесь</a>
                             {% endif %}
                         </div>
                     </div>

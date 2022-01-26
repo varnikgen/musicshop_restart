@@ -151,13 +151,14 @@ class CartProduct(models.Model):
         "Album": {"is_constructable": True, "fields": ["name", "artist.name"], "separator": ' - '}
     }
 
-    user = models.ForeignKey('Customer', verbose_name="Покупатель", on_delete=models.CASCADE)
+    user = models.ForeignKey('Customer', null=True, blank=True, verbose_name="Покупатель", on_delete=models.CASCADE)
     cart = models.ForeignKey('Cart', verbose_name="Корзина", on_delete=models.CASCADE)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
     qty = models.PositiveIntegerField(default=1)
     final_price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name="Общая цена")
+    session_key = models.CharField(max_length=1024, verbose_name='Ключ сессии', null=True, blank=True)
 
     def __str__(self):
         return f"Продукт: {self.content_object.name} (для корзины)"
@@ -188,14 +189,14 @@ class CartProduct(models.Model):
 class Cart(models.Model):
     """Корзина"""
 
-    owner = models.ForeignKey("Customer", verbose_name="Покупатель", on_delete=models.CASCADE)
+    owner = models.ForeignKey("Customer", null=True, blank=True, verbose_name="Покупатель", on_delete=models.CASCADE)
     products = models.ManyToManyField(
         CartProduct, blank=True, related_name="related_cart", verbose_name="Продукты для корзины"
     )
     total_products = models.IntegerField(default=0, verbose_name="Общее кол-во товара")
     final_price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name="Общая цена", null=True, blank=True)
     in_order = models.BooleanField(default=False)
-    for_anonymous_user = models.BooleanField(default=False)
+    session_key = models.CharField(max_length=1024, verbose_name='Ключ сессии', null=True, blank=True)
 
     def __str__(self):
         return str(self.id)

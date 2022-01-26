@@ -9,7 +9,7 @@ from django.shortcuts import render
 from .forms import LoginForm, RegistrationForm, OrderForm
 from .mixins import CartMixin, NotificationMixin
 from .models import Artist, Album, Customer, CartProduct, Notification
-from utils import recalc_cart
+from utils import recalc_cart, create_cart
 
 
 class BaseView(CartMixin, NotificationMixin, views.View):
@@ -65,6 +65,8 @@ class LoginView(views.View):
             user = authenticate(username=username, password=password)
             if user:
                 login(request, user)
+                if request.session.get('cart_id'):
+                    create_cart(request)
                 return HttpResponseRedirect('/')
         context = {
             'form': form
@@ -100,6 +102,8 @@ class RegistrationView(views.View):
             )
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password'])
             login(request, user)
+            if request.session.get('cart_id'):
+                create_cart(request)
             return HttpResponseRedirect('/')
         context = {
             'form': form
@@ -133,9 +137,19 @@ class AddToCartView(CartMixin, views.View):
         ct_model, product_slug = kwargs.get('ct_model'), kwargs.get('slug')
         content_type = ContentType.objects.get(model=ct_model)
         product = content_type.model_class().objects.get(slug=product_slug)
-        cart_product, created = CartProduct.objects.get_or_create(
-            user=self.cart.owner, cart=self.cart, content_type=content_type, object_id=product.id
-        )
+        data = {
+            'cart': self.cart,
+            'content_type': content_type,
+            'object_id': product.id,
+        }
+        if request.user.is_authenticated:
+            data.update({'user': self.cart.owner})
+            cart_product, created = CartProduct.objects.get_or_create(**data)
+        else:
+            data.update({
+                'session_key': request.session.session_key
+            })
+            cart_product, created = CartProduct.objects.get_or_create(**data)
         if created:
             self.cart.products.add(cart_product)
         recalc_cart(self.cart)
@@ -149,9 +163,21 @@ class DeleteFromCartView(CartMixin, views.View):
         ct_model, product_slug = kwargs.get('ct_model'), kwargs.get('slug')
         content_type = ContentType.objects.get(model=ct_model)
         product = content_type.model_class().objects.get(slug=product_slug)
-        cart_product = CartProduct.objects.get(
-            user=self.cart.owner, cart=self.cart, content_type=content_type, object_id=product.id
-        )
+
+        data = {
+            'cart': self.cart,
+            'content_type': content_type,
+            'object_id': product.id,
+        }
+        if request.user.is_authenticated:
+            data.update({'user': self.cart.owner})
+            cart_product, created = CartProduct.objects.get_or_create(**data)
+        else:
+            data.update({
+                'session_key': request.session.session_key
+            })
+            cart_product, created = CartProduct.objects.get_or_create(**data)
+
         self.cart.products.remove(cart_product)
         cart_product.delete()
         recalc_cart(self.cart)
@@ -165,9 +191,19 @@ class ChangeQTYView(CartMixin, views.View):
         ct_model, product_slug = kwargs.get('ct_model'), kwargs.get('slug')
         content_type = ContentType.objects.get(model=ct_model)
         product = content_type.model_class().objects.get(slug=product_slug)
-        cart_product = CartProduct.objects.get(
-            user=self.cart.owner, cart=self.cart, content_type=content_type, object_id=product.id
-        )
+        data = {
+            'cart': self.cart,
+            'content_type': content_type,
+            'object_id': product.id,
+        }
+        if request.user.is_authenticated:
+            data.update({'user': self.cart.owner})
+            cart_product, created = CartProduct.objects.get_or_create(**data)
+        else:
+            data.update({
+                'session_key': request.session.session_key
+            })
+            cart_product, created = CartProduct.objects.get_or_create(**data)
         qty = int(request.POST.get('qty'))
         cart_product.qty = qty
         cart_product.save()
